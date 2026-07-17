@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+import argparse
+from datetime import UTC, datetime
+import os
+from pathlib import Path
+import sys
+import tempfile
+
+from liquipedia_ical.calendar import build_calendar
+from liquipedia_ical.matches import (
+    LiquipediaError,
+    fetch_matches_html,
+    parse_upcoming_matches,
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Generate an iCalendar feed from Liquipedia's Dota 2 matches page."
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("dota2-matches.ics"),
+        help="calendar path (default: dota2-matches.ics)",
+    )
+    parser.add_argument(
+        "--user-agent",
+        help="contact-bearing Liquipedia User-Agent; defaults to LIQUIPEDIA_USER_AGENT",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=30,
+        help="API request timeout in seconds (default: 30)",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    user_agent = args.user_agent or os.environ.get("LIQUIPEDIA_USER_AGENT")
+    if not user_agent:
+        repository = os.environ.get("GITHUB_REPOSITORY")
+        if repository:
+            user_agent = f"LiquipediaIcal/1.0 (https://github.com/{repository})"
+    if not user_agent:
+        print(
+            "error: set LIQUIPEDIA_USER_AGENT to identify the project and provide contact info",
+            file=sys.stderr,
+        )
+        return 2
+
+    output = args.output.resolve()
+    previous = output.read_bytes().decode("utf-8") if output.exists() else None
+
+    try:
+        html = fetch_matches_html(user_agent=user_agent, timeout=args.timeout)
+        matches = parse_upcoming_matches(html)
+        calendar = build_calendar(matches, datetime.now(UTC), previous)
+    except (LiquipediaError, OSError, ValueError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    if previous == calendar:
+        print(f"Calendar is unchanged ({len(matches)} upcoming matches): {output}")
+        return 0
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    _atomic_write(output, calendar)
+    print(f"Wrote {len(matches)} upcoming matches to {output}")
+    return 0
+
+
+def _atomic_write(output: Path, content: str) -> None:
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        newline="",
+        dir=output.parent,
+        prefix=f".{output.name}.",
+        delete=False,
+    ) as temporary:
+        temporary.write(content)
+        temporary_path = Path(temporary.name)
+    try:
+        temporary_path.replace(output)
+    except BaseException:
+        temporary_path.unlink(missing_ok=True)
+        raise
