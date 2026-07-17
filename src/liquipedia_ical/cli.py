@@ -17,7 +17,7 @@ from liquipedia_ical.matches import (
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Generate an iCalendar feed from Liquipedia's Dota 2 matches page."
+        description="Generate an iCalendar feed of Liquipedia Tier 1 Dota 2 matches."
     )
     parser.add_argument(
         "--output",

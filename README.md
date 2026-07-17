@@ -1,11 +1,11 @@
-# Liquipedia Dota 2 iCalendar
+# Liquipedia Tier 1 Dota 2 iCalendar
 
-This repository turns the upcoming matches shown on [Liquipedia:Matches](https://liquipedia.net/dota2/Liquipedia:Matches) into `dota2-matches.ics`. A scheduled GitHub Actions workflow refreshes it every hour and commits only when the calendar actually changes.
+This repository turns upcoming Liquipedia Tier 1 Dota 2 matches into `dota2-matches.ics`. A scheduled GitHub Actions workflow refreshes it every hour and commits only when the calendar actually changes. Match data comes from the same module used by [Liquipedia:Matches](https://liquipedia.net/dota2/Liquipedia:Matches), with Liquipedia's Tier 1 filter applied at the API source.
 
 ## Publish and subscribe
 
 1. Push this repository to a **public** GitHub repository.
-2. Open the repository's **Actions** tab, select **Update Dota 2 calendar**, and run it once with **Run workflow**. Scheduled runs then happen hourly.
+2. Open the repository's **Actions** tab, select **Update Dota 2 Tier 1 calendar**, and run it once with **Run workflow**. Scheduled runs then happen hourly.
 3. Build the public calendar URL by replacing the placeholders:
 
    ```text
@@ -42,7 +42,7 @@ uv run python -m unittest discover -s tests -v
 
 ## Calendar behavior
 
-- The feed contains the 50 upcoming match cards returned by the page, including TBD participants.
+- The feed contains up to 50 upcoming matches from tournaments Liquipedia classifies as Tier 1, including TBD participants.
 - Times are emitted in UTC, so Google Calendar displays them in each subscriber's local time zone.
 - Liquipedia provides start times but not end times. Event lengths are estimates based on the series format: Bo1 is one hour, Bo3 is three hours, Bo5 is five hours, and an unknown format is three hours.
 - Events are transparent, so they do not mark subscribers as busy.
@@ -51,6 +51,6 @@ uv run python -m unittest discover -s tests -v
 
 ## Liquipedia usage
 
-The generator uses one gzip-enabled MediaWiki `action=parse` API request per run; it does not scrape Liquipedia's generated HTML endpoint. The hourly workflow is comfortably within Liquipedia's API rate limits. Calendar descriptions retain a source link and attribution.
+The generator uses one gzip-enabled MediaWiki `action=parse` API request per run and asks Liquipedia's match module for `filterbuttons-liquipediatier=1`; it does not scrape Liquipedia's generated HTML endpoint. The hourly workflow is comfortably within Liquipedia's API rate limits. Calendar descriptions retain the Tier 1 classification, a source link, and attribution.
 
 Liquipedia-derived data is available under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Liquipedia's [API Terms of Use](https://liquipedia.net/api-terms-of-use) also apply.

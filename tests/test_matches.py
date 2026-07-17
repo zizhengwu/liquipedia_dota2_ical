@@ -1,7 +1,15 @@
 from datetime import UTC, datetime, timedelta
+import gzip
+import json
+from urllib.parse import parse_qs, urlparse
 import unittest
+from unittest.mock import patch
 
-from liquipedia_ical.matches import LiquipediaError, parse_upcoming_matches
+from liquipedia_ical.matches import (
+    LiquipediaError,
+    fetch_matches_html,
+    parse_upcoming_matches,
+)
 
 
 HTML = """
@@ -55,6 +63,11 @@ class ParseUpcomingMatchesTest(unittest.TestCase):
         with self.assertRaises(LiquipediaError):
             parse_upcoming_matches('<div data-toggle-area-content="1"></div>')
 
+    def test_accepts_a_trusted_empty_tier_one_response(self) -> None:
+        matches = parse_upcoming_matches('<div id="liquipedia-tier-one-matches"></div>')
+
+        self.assertEqual(matches, [])
+
     def test_refuses_to_return_partial_data(self) -> None:
         malformed = HTML.replace(
             '</div>\n</div>\n<div data-toggle-area-content="2">',
@@ -65,6 +78,38 @@ class ParseUpcomingMatchesTest(unittest.TestCase):
 
         with self.assertRaises(LiquipediaError):
             parse_upcoming_matches(malformed)
+
+    @patch("liquipedia_ical.matches.urlopen")
+    def test_fetch_filters_to_tier_one_at_the_source(self, mock_urlopen) -> None:
+        response = _Response(
+            gzip.compress(json.dumps({"parse": {"text": HTML}}).encode("utf-8"))
+        )
+        mock_urlopen.return_value = response
+
+        self.assertEqual(fetch_matches_html("Test/1.0 (test@example.com)"), HTML)
+        request = mock_urlopen.call_args.args[0]
+        query = parse_qs(urlparse(request.full_url).query)
+        self.assertNotIn("page", query)
+        self.assertEqual(query["title"], ["Liquipedia:Matches"])
+        self.assertIn('id="liquipedia-tier-one-matches"', query["text"][0])
+        self.assertIn("filterbuttons-liquipediatier=1", query["text"][0])
+        self.assertIn("type=upcoming", query["text"][0])
+
+
+class _Response:
+    headers = {"Content-Encoding": "gzip"}
+
+    def __init__(self, payload: bytes) -> None:
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.payload
 
 
 if __name__ == "__main__":

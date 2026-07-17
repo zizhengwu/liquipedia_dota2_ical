@@ -13,6 +13,12 @@ from bs4 import BeautifulSoup, Tag
 
 API_URL = "https://liquipedia.net/dota2/api.php"
 MATCHES_PAGE_URL = "https://liquipedia.net/dota2/Liquipedia:Matches"
+TIER_ONE_MATCHES_WIKITEXT = (
+    '<div id="liquipedia-tier-one-matches">'
+    "{{#invoke:Lua|invoke|module=MatchTicker/Custom|fn=mainPage|dev=false|"
+    "type=upcoming|limit=50|filterbuttons-liquipediatier=1}}"
+    "</div>"
+)
 
 
 class LiquipediaError(RuntimeError):
@@ -38,11 +44,12 @@ class Match:
 
 
 def fetch_matches_html(user_agent: str, timeout: float = 30) -> str:
-    """Fetch the rendered Matches page through Liquipedia's MediaWiki API."""
+    """Render upcoming Tier 1 matches through Liquipedia's MediaWiki API."""
     parameters = urlencode(
         {
             "action": "parse",
-            "page": "Liquipedia:Matches",
+            "title": "Liquipedia:Matches",
+            "text": TIER_ONE_MATCHES_WIKITEXT,
             "prop": "text",
             "format": "json",
             "formatversion": "2",
@@ -79,16 +86,17 @@ def fetch_matches_html(user_agent: str, timeout: float = 30) -> str:
 
 
 def parse_upcoming_matches(html: str) -> list[Match]:
-    """Parse the upcoming match cards rendered on Liquipedia:Matches."""
+    """Parse the Tier 1 upcoming match cards rendered by Liquipedia."""
     soup = BeautifulSoup(html, "html.parser")
-    container = soup.select_one('[data-toggle-area-content="1"]')
+    container = soup.select_one("#liquipedia-tier-one-matches")
+    trusted_tier_one_response = container is not None
+    if container is None:
+        container = soup.select_one('[data-toggle-area-content="1"]')
     if container is None:
         expansion = soup.select_one('[data-filter-expansion-template*="type=upcoming"]')
         container = expansion
     if container is None:
-        raise LiquipediaError(
-            "Could not find the upcoming-match section in Liquipedia HTML"
-        )
+        container = soup
 
     cards = container.select(".match-info")
     matches: list[Match] = []
@@ -97,7 +105,7 @@ def parse_upcoming_matches(html: str) -> list[Match]:
         if match is not None:
             matches.append(match)
 
-    if not matches:
+    if not matches and not trusted_tier_one_response:
         raise LiquipediaError(
             "Liquipedia returned no parseable upcoming matches; refusing to replace the calendar"
         )

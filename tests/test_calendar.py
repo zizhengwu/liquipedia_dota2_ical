@@ -27,6 +27,8 @@ class BuildCalendarTest(unittest.TestCase):
         self.assertIn("DTSTART:20260717T110000Z", calendar)
         self.assertIn("DTEND:20260717T140000Z", calendar)
         unfolded = re.sub(r"\r\n ", "", calendar)
+        self.assertIn("X-WR-CALNAME:Dota 2 Tier 1 Matches", unfolded)
+        self.assertIn("Liquipedia tier: 1", unfolded)
         self.assertIn("A\\, B & Friends", unfolded)
         self.assertIn("Semicolon\\; Squad", unfolded)
         for line in calendar.split("\r\n"):
