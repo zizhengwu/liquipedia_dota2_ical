@@ -1,6 +1,6 @@
 BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//zizhengwu//liquipedia_dota2_ical//Dota 2 Tier 1 Matches//EN
+PRODID:-//zizhengwu//liquipedia_ical//Dota 2 Tier 1 Matches//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 X-WR-CALNAME:Dota 2 Tier 1 Matches — Liquipedia

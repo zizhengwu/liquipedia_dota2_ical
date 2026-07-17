@@ -32,8 +32,8 @@ jobs:
 
       - name: Generate calendar
         env:
-          LIQUIPEDIA_USER_AGENT: LiquipediaDota2Ical/1.0 (https://github.com/zizhengwu/liquipedia_dota2_ical)
-        run: uv run liquipedia-dota2-ical --output dota2-matches.ics
+          LIQUIPEDIA_USER_AGENT: LiquipediaIcal/1.0 (https://github.com/zizhengwu/liquipedia_ical)
+        run: uv run liquipedia-ical --output dota2-matches.ics
 
       - name: Commit an updated calendar
         run: |

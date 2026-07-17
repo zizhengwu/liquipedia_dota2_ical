@@ -4,7 +4,7 @@ This repository maintains a schedule and retained history of Liquipedia Tier 1 D
 
 ## Subscribe
 
-Subscribe to <https://raw.githubusercontent.com/zizhengwu/liquipedia_dota2_ical/refs/heads/master/dota2-matches.ics>.
+Subscribe to <https://raw.githubusercontent.com/zizhengwu/liquipedia_ical/refs/heads/master/dota2-matches.ics>.
 
 ## Run locally
 
@@ -12,8 +12,8 @@ Create the project-local environment and install from the lockfile:
 
 ```powershell
 uv sync --locked
-$env:LIQUIPEDIA_USER_AGENT = "LiquipediaDota2Ical/1.0 (https://github.com/zizhengwu/liquipedia_dota2_ical)"
-uv run liquipedia-dota2-ical
+$env:LIQUIPEDIA_USER_AGENT = "LiquipediaIcal/1.0 (https://github.com/zizhengwu/liquipedia_ical)"
+uv run liquipedia-ical
 ```
 
 Liquipedia requires a custom User-Agent that identifies the project and includes contact information. The GitHub workflow derives one from the repository URL automatically.
@@ -21,7 +21,7 @@ Liquipedia requires a custom User-Agent that identifies the project and includes
 To write somewhere else:
 
 ```powershell
-uv run liquipedia-dota2-ical --output public/dota2-matches.ics
+uv run liquipedia-ical --output public/dota2-matches.ics
 ```
 
 Run the tests with:

@@ -10,7 +10,7 @@ from typing import Iterable
 from liquipedia_ical.matches import MATCHES_PAGE_URL, Match
 
 
-PRODID = "-//zizhengwu//liquipedia_dota2_ical//Dota 2 Tier 1 Matches//EN"
+PRODID = "-//zizhengwu//liquipedia_ical//Dota 2 Tier 1 Matches//EN"
 UID_DOMAIN = "liquipedia-ical"
 
 
