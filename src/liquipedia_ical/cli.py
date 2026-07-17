@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     if not user_agent:
         repository = os.environ.get("GITHUB_REPOSITORY")
         if repository:
-            user_agent = f"LiquipediaIcal/1.0 (https://github.com/{repository})"
+            user_agent = f"LiquipediaDota2Ical/1.0 (https://github.com/{repository})"
     if not user_agent:
         print(
             "error: set LIQUIPEDIA_USER_AGENT to identify the project and provide contact info",

@@ -2,19 +2,9 @@
 
 This repository turns upcoming Liquipedia Tier 1 Dota 2 matches into `dota2-matches.ics`. A scheduled GitHub Actions workflow refreshes it every hour and commits only when the calendar actually changes. Match data comes from the same module used by [Liquipedia:Matches](https://liquipedia.net/dota2/Liquipedia:Matches), with Liquipedia's Tier 1 filter applied at the API source.
 
-## Publish and subscribe
+## Subscribe
 
-1. Push this repository to a **public** GitHub repository.
-2. Open the repository's **Actions** tab, select **Update Dota 2 Tier 1 calendar**, and run it once with **Run workflow**. Scheduled runs then happen hourly.
-3. Build the public calendar URL by replacing the placeholders:
-
-   ```text
-   https://raw.githubusercontent.com/<OWNER>/<REPOSITORY>/<DEFAULT_BRANCH>/dota2-matches.ics
-   ```
-
-4. In Google Calendar on the web, open **Other calendars → + → From URL**, paste that URL, and select **Add calendar**.
-
-Google controls how often subscribed calendars are refreshed, so changes are not immediate. The raw URL must be publicly accessible; Google cannot subscribe to a private GitHub repository.
+Subscribe to <https://raw.githubusercontent.com/zizhengwu/liquipedia_dota2_ical/refs/heads/master/dota2-matches.ics>.
 
 ## Run locally
 
@@ -22,8 +12,8 @@ Create the project-local environment and install from the lockfile:
 
 ```powershell
 uv sync --locked
-$env:LIQUIPEDIA_USER_AGENT = "LiquipediaIcal/1.0 (https://github.com/YOU/REPOSITORY; mailto:you@example.com)"
-uv run liquipedia-ical
+$env:LIQUIPEDIA_USER_AGENT = "LiquipediaDota2Ical/1.0 (https://github.com/zizhengwu/liquipedia_dota2_ical)"
+uv run liquipedia-dota2-ical
 ```
 
 Liquipedia requires a custom User-Agent that identifies the project and includes contact information. The GitHub workflow derives one from the repository URL automatically.
@@ -31,7 +21,7 @@ Liquipedia requires a custom User-Agent that identifies the project and includes
 To write somewhere else:
 
 ```powershell
-uv run liquipedia-ical --output public/dota2-matches.ics
+uv run liquipedia-dota2-ical --output public/dota2-matches.ics
 ```
 
 Run the tests with:

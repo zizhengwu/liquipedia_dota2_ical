@@ -1,7 +1,7 @@
 [project]
-name = "liquipedia-ical"
+name = "liquipedia-dota2-ical"
 version = "0.1.0"
-description = "Generate an iCalendar feed from Liquipedia's Dota 2 matches page"
+description = "Generate an iCalendar feed of Liquipedia Tier 1 Dota 2 matches"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,7 +9,10 @@ dependencies = [
 ]
 
 [project.scripts]
-liquipedia-ical = "liquipedia_ical.cli:main"
+liquipedia-dota2-ical = "liquipedia_ical.cli:main"
+
+[project.urls]
+Repository = "https://github.com/zizhengwu/liquipedia_dota2_ical"
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]
@@ -17,4 +20,3 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/liquipedia_ical"]
-
