@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-from liquipedia_ical.calendar import build_calendar
+from liquipedia_ical.calendar import build_calendar, read_previous_events
 from liquipedia_ical.matches import (
     LiquipediaError,
     fetch_matches_html,
@@ -63,13 +63,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 1
 
+    total_events = len(read_previous_events(calendar))
+    result_summary = (
+        f"{total_events} total matches; {len(matches)} currently returned by Liquipedia"
+    )
     if previous == calendar:
-        print(f"Calendar is unchanged ({len(matches)} upcoming matches): {output}")
+        print(f"Calendar is unchanged ({result_summary}): {output}")
         return 0
 
     output.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write(output, calendar)
-    print(f"Wrote {len(matches)} upcoming matches to {output}")
+    print(f"Wrote {result_summary} to {output}")
     return 0
 
 

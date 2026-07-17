@@ -19,6 +19,9 @@ class PreviousEvent:
     content_hash: str
     dtstamp: str
     sequence: int
+    start: datetime | None
+    end: datetime | None
+    raw_block: str
 
 
 def build_calendar(
@@ -29,7 +32,7 @@ def build_calendar(
     """Build an RFC 5545 calendar while retaining unchanged event metadata."""
     generated_at = generated_at.astimezone(UTC).replace(microsecond=0)
     previous = read_previous_events(previous_calendar or "")
-    events: list[list[str]] = []
+    events: list[tuple[datetime, str]] = []
     seen_uids: set[str] = set()
 
     for match in sorted(matches, key=lambda item: (item.start, item.team1, item.team2)):
@@ -42,6 +45,10 @@ def build_calendar(
 
         content_hash = event_content_hash(match)
         old = previous.get(uid)
+        if old is not None and old.end is not None and old.end <= generated_at:
+            events.append((old.start or match.start, old.raw_block))
+            continue
+
         if old is not None and old.content_hash == content_hash:
             dtstamp = old.dtstamp
             sequence = old.sequence
@@ -59,25 +66,34 @@ def build_calendar(
             f"{match.source_url}"
         )
         end = match.start + match.duration
+        event_lines = [
+            "BEGIN:VEVENT",
+            f"UID:{uid}",
+            f"DTSTAMP:{dtstamp}",
+            f"LAST-MODIFIED:{dtstamp}",
+            f"SEQUENCE:{sequence}",
+            f"DTSTART:{_format_datetime(match.start)}",
+            f"DTEND:{_format_datetime(end)}",
+            _text_property("SUMMARY", summary),
+            _text_property("DESCRIPTION", description),
+            f"URL:{match.source_url}",
+            "CATEGORIES:Dota 2,Esports,Liquipedia Tier 1",
+            "STATUS:CONFIRMED",
+            "TRANSP:TRANSPARENT",
+            f"X-LIQUIPEDIA-CONTENT-HASH:{content_hash}",
+            "END:VEVENT",
+        ]
         events.append(
-            [
-                "BEGIN:VEVENT",
-                f"UID:{uid}",
-                f"DTSTAMP:{dtstamp}",
-                f"LAST-MODIFIED:{dtstamp}",
-                f"SEQUENCE:{sequence}",
-                f"DTSTART:{_format_datetime(match.start)}",
-                f"DTEND:{_format_datetime(end)}",
-                _text_property("SUMMARY", summary),
-                _text_property("DESCRIPTION", description),
-                f"URL:{match.source_url}",
-                "CATEGORIES:Dota 2,Esports,Liquipedia Tier 1",
-                "STATUS:CONFIRMED",
-                "TRANSP:TRANSPARENT",
-                f"X-LIQUIPEDIA-CONTENT-HASH:{content_hash}",
-                "END:VEVENT",
-            ]
+            (
+                match.start,
+                "\r\n".join(_fold_line(line) for line in event_lines),
+            )
         )
+
+    for uid, old in previous.items():
+        if uid in seen_uids or old.end is None or old.end > generated_at:
+            continue
+        events.append((old.start or old.end, old.raw_block))
 
     lines = [
         "BEGIN:VCALENDAR",
@@ -88,17 +104,19 @@ def build_calendar(
         _text_property("X-WR-CALNAME", "Dota 2 Tier 1 Matches — Liquipedia"),
         _text_property(
             "X-WR-CALDESC",
-            f"Upcoming Liquipedia Tier 1 Dota 2 matches from {MATCHES_PAGE_URL}",
+            f"Liquipedia Tier 1 Dota 2 match schedule and history from {MATCHES_PAGE_URL}",
         ),
         "X-WR-TIMEZONE:UTC",
         "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
         "X-PUBLISHED-TTL:PT1H",
     ]
-    for event in events:
-        lines.extend(event)
-    lines.append("END:VCALENDAR")
-
-    return "\r\n".join(_fold_line(line) for line in lines) + "\r\n"
+    header = "\r\n".join(_fold_line(line) for line in lines)
+    event_blocks = "\r\n".join(
+        block for _, block in sorted(events, key=lambda item: item[0])
+    )
+    if event_blocks:
+        return f"{header}\r\n{event_blocks}\r\nEND:VCALENDAR\r\n"
+    return f"{header}\r\nEND:VCALENDAR\r\n"
 
 
 def event_uid(match: Match) -> str:
@@ -132,13 +150,13 @@ def event_content_hash(match: Match) -> str:
 
 
 def read_previous_events(calendar: str) -> dict[str, PreviousEvent]:
-    unfolded = re.sub(r"\r?\n[ \t]", "", calendar)
     previous: dict[str, PreviousEvent] = {}
-    for block in re.findall(
-        r"BEGIN:VEVENT\r?\n(.*?)\r?\nEND:VEVENT", unfolded, re.DOTALL
+    for raw_block in re.findall(
+        r"BEGIN:VEVENT\r?\n.*?\r?\nEND:VEVENT", calendar, re.DOTALL
     ):
+        unfolded = re.sub(r"\r?\n[ \t]", "", raw_block)
         properties: dict[str, str] = {}
-        for line in block.splitlines():
+        for line in unfolded.splitlines():
             name, separator, value = line.partition(":")
             if separator:
                 properties[name.split(";", 1)[0]] = value
@@ -150,8 +168,24 @@ def read_previous_events(calendar: str) -> dict[str, PreviousEvent]:
                 sequence = int(properties.get("SEQUENCE", "0"))
             except ValueError:
                 sequence = 0
-            previous[uid] = PreviousEvent(content_hash, dtstamp, sequence)
+            previous[uid] = PreviousEvent(
+                content_hash=content_hash,
+                dtstamp=dtstamp,
+                sequence=sequence,
+                start=_parse_datetime(properties.get("DTSTART")),
+                end=_parse_datetime(properties.get("DTEND")),
+                raw_block=raw_block,
+            )
     return previous
+
+
+def _parse_datetime(value: str | None) -> datetime | None:
+    if value is None:
+        return None
+    try:
+        return datetime.strptime(value, "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC)
+    except ValueError:
+        return None
 
 
 def _format_datetime(value: datetime) -> str:

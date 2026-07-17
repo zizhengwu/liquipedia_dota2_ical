@@ -1,6 +1,6 @@
 # Liquipedia Tier 1 Dota 2 iCalendar
 
-This repository turns upcoming Liquipedia Tier 1 Dota 2 matches into `dota2-matches.ics`. A scheduled GitHub Actions workflow refreshes it every hour and commits only when the calendar actually changes. Match data comes from the same module used by [Liquipedia:Matches](https://liquipedia.net/dota2/Liquipedia:Matches), with Liquipedia's Tier 1 filter applied at the API source.
+This repository maintains a schedule and retained history of Liquipedia Tier 1 Dota 2 matches in `dota2-matches.ics`. A scheduled GitHub Actions workflow refreshes it every hour and commits only when the calendar actually changes. Match data comes from the same module used by [Liquipedia:Matches](https://liquipedia.net/dota2/Liquipedia:Matches), with Liquipedia's Tier 1 filter applied at the API source.
 
 ## Subscribe
 
@@ -37,7 +37,10 @@ uv run python -m unittest discover -s tests -v
 - Liquipedia provides start times but not end times. Event lengths are estimates based on the series format: Bo1 is one hour, Bo3 is three hours, Bo5 is five hours, and an unknown format is three hours.
 - Events are transparent, so they do not mark subscribers as busy.
 - Stable match IDs become stable iCalendar UIDs. If a scheduled time or participant changes, the existing event is updated instead of duplicated.
-- Removed or completed matches disappear on the next generated version.
+- Expired matches remain in the feed unchanged, providing a persistent match history.
+- Existing upcoming matches are updated by stable match ID, and newly discovered matches are appended.
+- Missing future matches are removed because Liquipedia may have cancelled them.
+- The checked-in `dota2-matches.ics` file is the archive; deleting it resets the retained history.
 
 ## Liquipedia usage
 

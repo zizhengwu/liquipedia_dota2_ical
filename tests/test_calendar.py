@@ -66,6 +66,57 @@ class BuildCalendarTest(unittest.TestCase):
         self.assertIn("DTSTAMP:20260717T030000Z", second)
         self.assertIn("DTSTART:20260717T120000Z", second)
 
+    def test_retains_an_expired_match_unchanged_when_it_disappears(self) -> None:
+        first = build_calendar([self.match], self.first_run)
+        original_event = _event_block(first)
+
+        later = build_calendar(
+            [],
+            datetime(2026, 7, 17, 15, 0, tzinfo=UTC),
+            previous_calendar=first,
+        )
+
+        self.assertEqual(_event_block(later), original_event)
+
+    def test_does_not_update_an_expired_match(self) -> None:
+        first = build_calendar([self.match], self.first_run)
+        changed = Match(
+            start=datetime(2026, 7, 17, 12, 0, tzinfo=UTC),
+            team1="Changed Team",
+            team2=self.match.team2,
+            tournament=self.match.tournament,
+            series_format=self.match.series_format,
+            source_url=self.match.source_url,
+            source_id=self.match.source_id,
+        )
+
+        later = build_calendar(
+            [changed],
+            datetime(2026, 7, 17, 15, 0, tzinfo=UTC),
+            previous_calendar=first,
+        )
+
+        self.assertEqual(_event_block(later), _event_block(first))
+        self.assertNotIn("Changed Team", later)
+
+    def test_removes_a_missing_future_match(self) -> None:
+        first = build_calendar([self.match], self.first_run)
+
+        later = build_calendar(
+            [],
+            datetime(2026, 7, 17, 3, 0, tzinfo=UTC),
+            previous_calendar=first,
+        )
+
+        self.assertNotIn("BEGIN:VEVENT", later)
+
+
+def _event_block(calendar: str) -> str:
+    match = re.search(r"BEGIN:VEVENT\r\n.*?\r\nEND:VEVENT", calendar, re.DOTALL)
+    if match is None:
+        raise AssertionError("Calendar does not contain an event")
+    return match.group(0)
+
 
 if __name__ == "__main__":
     unittest.main()
